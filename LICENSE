@@ -1,21 +1,64 @@
-MIT License
+DATA LICENSE FOR NON-COMMERCIAL RESEARCH AND EDUCATIONAL USE
 
-Copyright (c) 2026 <YOUR NAME>
+Copyright (c) CALCENA, CECILIA and Universidad Católica "Nuestra Señora de la Asunción"
+(together, the "Licensors"). All rights reserved except as granted below.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This license applies to the datasets listed below (the "Data"): [flood inventory polygons,
+the 12-layer flood indicator stack, flood susceptibility maps for the Asunción Metropolitan
+Area, trained model weights, and associated tables], including any part of them. It does not
+apply to the source code of this repository, which is licensed separately.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. GRANT OF PERMISSION
+Subject to the conditions below, the Licensors grant any person obtaining a copy of the Data
+a free-of-charge, worldwide, non-exclusive, non-transferable permission to use, copy,
+modify, adapt, and redistribute the Data solely for Non-Commercial Research and Educational
+Purposes.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. DEFINITIONS
+"Non-Commercial" means not primarily intended for or directed towards commercial advantage
+or monetary compensation.
+"Research and Educational Purposes" means academic and scientific research, teaching, and
+learning.
+
+3. PROHIBITED USES
+Without the prior written permission of both Licensors, the Data may not be used, in whole
+or in part, for commercial purposes or to generate profit. This includes selling, licensing,
+or renting the Data; incorporating it into products or services offered for a fee; and using
+it in paid consulting or for the commercial benefit of any organization.
+
+4. CONDITIONS
+a) Attribution. You must credit the Licensors and cite the Data as follows: "[YOUR NAME],
+   Universidad Católica 'Nuestra Señora de la Asunción' ([YEAR]). [Dataset title]. [DOI or
+   URL]."
+b) License notice. Every copy or redistribution of the Data must include this license or a
+   link to it.
+c) Changes. If you modify the Data, you must indicate that changes were made. You may not
+   suggest that the Licensors endorse you or your use.
+d) Same terms. Modified versions and derived datasets may only be distributed under these
+   same terms.
+
+5. THIRD-PARTY MATERIAL
+The Data was produced using third-party sources, each subject to its own terms. This license
+covers only the Licensors' own contribution and does not change the terms that apply to
+third-party material.
+
+6. OWNERSHIP
+The Data is and remains the joint property of the Licensors. This license transfers no
+ownership rights.
+
+7. TERMINATION
+Your permissions under this license end automatically if you breach any of its terms.
+
+8. NO WARRANTY AND LIMITATION OF LIABILITY
+THE DATA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, ACCURACY,
+AND NON-INFRINGEMENT. THE DATA IS A RESEARCH PRODUCT AND HAS NOT BEEN VALIDATED FOR
+ENGINEERING DESIGN, INSURANCE, LEGAL, OR EMERGENCY-RESPONSE DECISIONS. IN NO EVENT SHALL THE
+LICENSORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE DATA OR ITS
+USE.
+
+9. GOVERNING LAW
+This license is governed by the laws of the Republic of Paraguay.
+
+10. COMMERCIAL PERMISSION
+To request permission for commercial use, contact: CECILIA.CALCENA@UC.EDU.PY.
