@@ -1,0 +1,8 @@
+event_id,date_range,type,in_AMA,use_in_pipeline,confidence,note
+2019_05,2019-05-15/2019-06-15,fluvial (Rio Paraguay),yes,YES - main event,high,"Banados Norte/Sur flooded; river stayed high Mar 2019-Feb 2020. Long-lasting so Sentinel-1 will catch it. Pick the post scene at peak stage (check the Asuncion gauge) and a low-water reference scene on the same relative orbit."
+2021_07,2021-07 (est.),fluvial?,yes,VERIFY BEFORE USE,low,"Source row says '(est.)'. As far as I know 2021 was a low-water/drought year on the Paraguay-Parana system, so check the Asuncion gauge for July 2021 before using it."
+2023_03_05,2023-01/2023-05,fluvial (Rio Paraguay),partial,MAYBE,medium,"Vallemi record (Mar 2023) is upper basin. Use only if the Asuncion gauge shows flood stage; choose the date of the peak."
+2024_04_urban,2024-04-12/2024-04-24,urban pluvial (raudales),yes,NO for SAR inventory; use for validation,high (event) / low (SAR detectability),"Hours-long flash floods in streets and arroyos: Sentinel-1 6-12 day revisit will almost surely miss them and SAR is unreliable in dense urban areas. Use geotagged reports/photos for qualitative validation, or model pluvial separately."
+2025_06,2025-06,fluvial (Rio Paraguay),yes,YES - second event,medium,"Riverside Asuncion affected. Confirm peak date with gauge."
+2021_01_CDE,2021-01-12,urban pluvial,no (Ciudad del Este),NO,-,Outside AMA.
+2025_03_04_chaco,2025-03/2025-04,fluvial (Pilcomayo/Chaco/Apa),no,NO for AMA map; optional for fine-tuning stage 1,-,"Large fluvial events outside AMA; could be extra training chips for the segmentation net if you label some."

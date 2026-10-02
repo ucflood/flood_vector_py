@@ -1,0 +1,17 @@
+name: ama-flood
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - rasterio
+  - geopandas
+  - shapely
+  - pytest
+  - pip
+  - pip:
+      - tensorflow>=2.16,<3
+      - pysheds>=0.5
+      - earthengine-api
