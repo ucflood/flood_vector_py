@@ -15,7 +15,7 @@ Layers are exported over AOI + BUFFER_M so flow accumulation in 00b is not trunc
 import datetime as dt
 import ee
 
-PROJECT = "your-gee-cloud-project"          # <- EDIT
+PROJECT = "buoyant-facet-392719"          
 ee.Initialize(project=PROJECT)
 
 CRS, SCALE, FOLDER = "EPSG:32721", 30, "AMA_layers"
@@ -29,11 +29,11 @@ OPTICAL_SENSOR = "sentinel2"                 # "sentinel2" (10/20 m bands, ~5-da
 S2_CLOUD_METHOD = "cloudscore"               # "cloudscore" (Cloud Score+, recommended) or "scl" (scene-classification band)
 S2_CLOUDSCORE_MIN = 0.6                      # keep pixels with cs_cdf >= this (higher = stricter)
 S2_MAX_SCENE_CLOUD_PCT = 70                  # drop scenes cloudier than this before compositing
-OPTICAL_START, OPTICAL_END = "2019-01-01", "2025-12-31"   # Sentinel-2 L2A is global from ~Dec 2018
+OPTICAL_START, OPTICAL_END = "2014-01-01", "2025-12-31"   # Sentinel-2 L2A is global from ~Dec 2018
 # Exclude flood windows from the optical composite, otherwise NDWI/NDVI "see" the flood you are trying to predict:
 EXCLUDE_RANGES = [("2019-03-01", "2020-03-01"), ("2023-01-01", "2023-06-30"), ("2025-05-15", "2025-07-15")]
 NDWI_DEF = "paper"                           # "paper" = (NIR-SWIR1)/(NIR+SWIR1) [Eq.2, really NDMI]; "mcfeeters" = (G-NIR); "xu" = (G-SWIR1)
-RAIN_START, RAIN_END, RAIN_WINDOW_DAYS, RAIN_STEP_DAYS = "2019-01-01", "2025-12-31", 15, 5
+RAIN_START, RAIN_END, RAIN_WINDOW_DAYS, RAIN_STEP_DAYS = "2014-01-01", "2025-12-31", 15, 5
 SOIL_OPENLANDMAP = False
 
 
