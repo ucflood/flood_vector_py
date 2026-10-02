@@ -14,7 +14,7 @@ Sen1Floods11 ─> 01 train U-Net ─> 02 apply to AMA S1 scenes (02a export) ─
 
 ## Setup
 ```bash
-git clone <your-repo-url> && cd ama-flood-susceptibility
+git clone https://github.com/ucflood/flood_vector_py && cd ama-flood-susceptibility
 conda env create -f environment.yml && conda activate ama-flood     # or: pip install -r requirements.txt
 earthengine authenticate                                             # only for 00a / 02a
 make test
