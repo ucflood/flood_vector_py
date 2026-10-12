@@ -1,0 +1,5 @@
+# Google Colab: only what Colab does not ship. TensorFlow, numpy, pandas, scipy, scikit-learn, shapely,
+# geopandas and earthengine-api are preinstalled; reinstalling TensorFlow can break Colab's GPU (CUDA) setup.
+rasterio>=1.3
+pysheds>=0.5
+pytest
