@@ -13,6 +13,13 @@ record (timestamp + rain in mm). Missing records stay missing (they are not assu
 
 Event definition (assumption, the thesis does not state one): consecutive 10-min records with rain > 0, merged
 when separated by less than --dry-gap-min minutes without rain. An event is kept if its 10-min peak is >= 3 mm.
+
+Own criterion instead of Tabla 5: --intense-mm X --window-min W keeps an event when the rain accumulated in any W
+minutes (W a multiple of 10) reaches X mm, e.g. 10 mm in 30 min; all kept events are labelled "Intenso". Records that
+are missing inside a window count as 0, so the accumulation is a lower bound (a window that passes is a sure pass).
+
+  python pipeline/rain_events_10min.py --input dinac_86218_10min.csv --out results/rain_events_86218.csv \
+      --window-min 30 --intense-mm 10
 """
 import argparse
 import os
@@ -29,6 +36,19 @@ def classify(peak_mm):
     return None
 
 
+def localize(t, tz):
+    """Naive local timestamps -> tz-aware, robust to daylight-saving changes (Paraguay had DST until Oct 2024).
+    Repeated hour (end of DST, March): the repetition is inferred from the record order; if the file has no repeated
+    hour to infer from, those records are dropped. Missing hour (start of DST, October): shifted to the next valid
+    time. Use --tz Etc/GMT+3 (fixed UTC-3, no DST) if the logger never changed its clock."""
+    try:
+        return t.dt.tz_localize(tz, ambiguous="infer", nonexistent="shift_forward")
+    except Exception:                    # no repeated hour in the data (pytz/pandas raise different types)
+        loc = t.dt.tz_localize(tz, ambiguous="NaT", nonexistent="shift_forward")
+        print(f"AVISO: {int(loc.isna().sum())} registros caen en una hora repetida por el cambio de hora y se descartan")
+        return loc
+
+
 def load_series(path, time_col, rain_col, tz, dayfirst=True):
     """dayfirst=True reads 05/06/2025 as 5 June (Paraguayan convention); ISO dates are unaffected."""
     df = pd.read_csv(path)
@@ -38,19 +58,24 @@ def load_series(path, time_col, rain_col, tz, dayfirst=True):
     else:
         t = pd.to_datetime(raw, dayfirst=dayfirst)
     if t.dt.tz is None:
-        t = t.dt.tz_localize(tz)
-    s = pd.Series(pd.to_numeric(df[rain_col], errors="coerce").values, index=t.dt.tz_convert("UTC")).sort_index()
+        t = localize(t, tz)
+    ok = t.notna().values
+    s = pd.Series(pd.to_numeric(df[rain_col], errors="coerce").values[ok], index=t[ok].dt.tz_convert("UTC")).sort_index()
     s = s[~s.index.duplicated(keep="first")]
     full = pd.date_range(s.index.min().floor("10min"), s.index.max().ceil("10min"), freq="10min", tz="UTC")
     return s.reindex(full)          # gaps -> NaN
 
 
-def find_events(s, dry_gap_min=60):
+def find_events(s, dry_gap_min=60, window_min=10, intense_mm=None):
+    """intense_mm=None: thesis Tabla 5 on the 10-min peak. intense_mm=X: keep events with >= X mm in any window_min minutes."""
+    if window_min < 10 or window_min % 10:
+        raise ValueError("window_min must be a multiple of 10 (records are 10 min)")
+    roll = s.rolling(window_min // 10, min_periods=1).sum()      # NaN counts as 0 -> lower bound
     wet = s.fillna(0) > 0
     idx = np.flatnonzero(wet.values)
     if len(idx) == 0:
         return pd.DataFrame(columns=["inicio_utc", "fin_utc", "duracion_h", "acumulado_mm", "pico_10min_mm",
-                                     "intensidad_max_mm_h", "clase", "registros_faltantes"])
+                                     "intensidad_max_mm_h", "clase", "registros_faltantes", "max_ventana_mm"])
     max_gap = dry_gap_min // 10
     groups, start, prev = [], idx[0], idx[0]
     for i in idx[1:]:
@@ -62,7 +87,8 @@ def find_events(s, dry_gap_min=60):
     for a, b in groups:
         seg = s.iloc[a:b + 1]
         peak = float(seg.max())
-        cls = classify(peak)
+        wmax = float(roll.iloc[a:b + 1].max())
+        cls = classify(peak) if intense_mm is None else ("Intenso" if wmax >= intense_mm else None)
         if cls is None:
             continue
         rows.append(dict(inicio_utc=seg.index[0] - pd.Timedelta(minutes=10),   # a record covers the 10 min before it
@@ -72,7 +98,8 @@ def find_events(s, dry_gap_min=60):
                          pico_10min_mm=peak,
                          intensidad_max_mm_h=round(peak * 6, 1),
                          clase=cls,
-                         registros_faltantes=int(seg.isna().sum())))
+                         registros_faltantes=int(seg.isna().sum()),
+                         max_ventana_mm=round(wmax, 1)))
     return pd.DataFrame(rows)
 
 
@@ -82,10 +109,13 @@ def daily_candidates(s, threshold=20.0):
     return d[d > threshold]
 
 
-def fill_candidates(cand_path, events, out_path, series=None):
+def fill_candidates(cand_path, events, out_path, series=None, window_min=10, intense_mm=None):
     """Fill 'Pendiente' rows: events starting from 12 UTC of the day before the daily value to 12 UTC of that day.
     Rows whose window has no 10-min data stay 'Pendiente' (missing data is not the same as no event)."""
     c = pd.read_csv(cand_path, dtype=str, keep_default_na=False)
+    wcol = f"max_{window_min}min_mm" if intense_mm is not None else None     # accumulation in the chosen window
+    if wcol and wcol not in c.columns:
+        c[wcol] = ""
     for i, row in c.iterrows():
         if row.get("clase_10min") != "Pendiente" or not row.get("fecha_dato_diario"):
             continue
@@ -96,11 +126,12 @@ def fill_candidates(cand_path, events, out_path, series=None):
         hit = events[(events["inicio_utc"] >= lo) & (events["inicio_utc"] < hi)] if len(events) else events
         has_flag = "inundacion_repentina_ama" in c.columns
         if len(hit) == 0:
-            c.at[i, "clase_10min"] = "Sin evento (pico < 3 mm/10 min)"
+            c.at[i, "clase_10min"] = ("Sin evento (pico < 3 mm/10 min)" if intense_mm is None
+                                      else f"Sin evento (< {intense_mm:g} mm en {window_min} min)")
             if has_flag:
                 c.at[i, "inundacion_repentina_ama"] = "Poco probable: no alcanza el umbral"
             continue
-        top = hit.loc[hit["pico_10min_mm"].idxmax()]
+        top = hit.loc[hit["max_ventana_mm"].idxmax()]
         c.at[i, "clase_10min"] = top["clase"]
         if has_flag:   # storms at the thesis threshold produce flash floods in the AMA (to verify with imagery)
             c.at[i, "inundacion_repentina_ama"] = "Probable (verificar con imágenes)"
@@ -108,13 +139,16 @@ def fill_candidates(cand_path, events, out_path, series=None):
         c.at[i, "fin_utc"] = top["fin_utc"].strftime("%Y-%m-%d %H:%M")
         c.at[i, "acumulado_mm"] = f"{top['acumulado_mm']:.1f}"
         c.at[i, "pico_10min_mm"] = f"{top['pico_10min_mm']:.1f}"
+        if wcol:
+            c.at[i, wcol] = f"{top['max_ventana_mm']:.1f}"
     c.to_csv(out_path, index=False)
     return c
 
 
 def main(a):
     s = load_series(a.input, a.time_col, a.rain_col, a.tz, dayfirst=not a.monthfirst)
-    ev = find_events(s, a.dry_gap_min)
+    w, thr = getattr(a, "window_min", 10), getattr(a, "intense_mm", None)
+    ev = find_events(s, a.dry_gap_min, w, thr)
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     ev.to_csv(a.out, index=False)
     days = daily_candidates(s)
@@ -123,7 +157,7 @@ def main(a):
           f"{len(ev)} eventos ({by_class})")
     if a.candidates:
         out = a.out.replace(".csv", "_listado.csv")
-        fill_candidates(a.candidates, ev, out, series=s)
+        fill_candidates(a.candidates, ev, out, series=s, window_min=w, intense_mm=thr)
         print("listado completado ->", out)
 
 
@@ -136,8 +170,14 @@ def parse_args(argv=None):
     p.add_argument("--tz", default="UTC", help="time zone of naive timestamps, e.g. America/Asuncion")
     p.add_argument("--monthfirst", action="store_true", help="dates like 06/05/2025 are month/day (default: day/month)")
     p.add_argument("--dry-gap-min", type=int, default=60)
+    p.add_argument("--window-min", type=int, default=10, help="accumulation window in minutes (multiple of 10); used with --intense-mm")
+    p.add_argument("--intense-mm", type=float, help="own criterion: keep events with >= this many mm in --window-min minutes "
+                   "(e.g. --window-min 30 --intense-mm 10); default = thesis Tabla 5 on the 10-min peak")
     p.add_argument("--candidates", help="data/events/rain_events_AMA_2018_2025.csv to fill its 'Pendiente' rows")
-    return p.parse_args(argv)
+    a = p.parse_args(argv)
+    if a.intense_mm is None and a.window_min != 10:
+        p.error("--window-min needs --intense-mm")
+    return a
 
 
 if __name__ == "__main__":
