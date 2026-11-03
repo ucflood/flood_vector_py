@@ -9,7 +9,7 @@ CKPT ?= results/checkpoints
 INV ?= results/inventory
 OUT ?= results/susceptibility
 
-.PHONY: test hydro stack sen1floods11-data train inventory susceptibility license-text verify-flash
+.PHONY: test hydro stack sen1floods11-data train threshold inventory susceptibility license-text verify-flash
 
 test:
 > $(PY) -m pytest -q
@@ -33,12 +33,19 @@ sen1floods11-data:
 
 train:
 > $(PY) pipeline/01_train_sen1floods11.py --train-csv $(S1F11)/flood_train_data.csv --valid-csv $(S1F11)/flood_valid_data.csv \
->   --test-csv $(S1F11)/flood_test_data.csv --s1-dir $(S1F11)/files/S1 --lbl-dir $(S1F11)/files/Labels --out-dir $(CKPT)
+>   --test-csv $(S1F11)/flood_test_data.csv --s1-dir $(S1F11)/files/S1 --lbl-dir $(S1F11)/files/Labels --out-dir $(CKPT) $(TRAIN_ARGS)
 
+# 01b: pick the water-probability threshold on the validation split (then: make inventory ... THR=0.65 TTA=1)
+threshold:
+> $(PY) pipeline/01b_calibrate_threshold.py --model $(CKPT)/unet_s1f11_best.keras --valid-csv $(S1F11)/flood_valid_data.csv \
+>   --test-csv $(S1F11)/flood_test_data.csv --s1-dir $(S1F11)/files/S1 --lbl-dir $(S1F11)/files/Labels --out $(CKPT)/threshold.json
+
+# optional: THR=0.65 TTA=1 SLOPE=$(LAYERS)/slope.tif
 # make inventory EVENT=2019_05 POST=data/interim/S1_2019_flood.tif PRE=data/interim/S1_2019_ref_lowwater.tif PERM=data/interim/GSW_occurrence.tif
 inventory:
 > $(PY) pipeline/02_ama_flood_inventory.py --model $(CKPT)/unet_s1f11_best.keras --event $(EVENT) --post $(POST) \
->   $(if $(PRE),--pre $(PRE),) $(if $(PERM),--perm-water $(PERM),) --out-dir $(INV)
+>   $(if $(PRE),--pre $(PRE),) $(if $(PERM),--perm-water $(PERM),) \
+>   $(if $(THR),--thr $(THR),) $(if $(TTA),--tta,) $(if $(SLOPE),--slope $(SLOPE),) --out-dir $(INV)
 
 susceptibility:
 > $(PY) pipeline/03_susceptibility_1dcnn.py --stack-dir $(STACK) --inventory $(INV)/flood_*.gpkg --out-dir $(OUT) \

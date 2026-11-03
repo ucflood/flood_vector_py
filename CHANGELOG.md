@@ -9,6 +9,19 @@ Record *why* when it affects results (e.g. a changed threshold, a different data
 
 ## [Unreleased]
 
+### Added (stage 1 / stage 2 improvements, 2026-11-03)
+- `pipeline/01b_calibrate_threshold.py` (+ `make threshold`): sweeps the water-probability threshold on the Sen1Floods11 validation split, with and without 4-flip TTA, reports IoU / precision / recall, picks the best on validation and reports it on test; writes `threshold.json` and prints the `--thr`/`--tta` to use in stage 2. Why: the 1:8 class weight biases the network towards water, so 0.5 is not the IoU-optimal threshold.
+- `s1_common.make_masked_ce_dice`: weighted CE + Dice of the water class (label 255 ignored in both). `01_train_sen1floods11.py --dice-weight` (default 0.5; 0 = old loss).
+- `01_train_sen1floods11.py --sched cosine|restarts` (default `cosine`: one decay over all epochs instead of warm restarts, which made the validation IoU jump every 10/20/40 epochs) and `--ema D` (validation and checkpoints use an exponential moving average of the weights; default off). The old setup is `--sched restarts --dice-weight 0`. Not yet compared on real data: run both and keep the better validation IoU.
+- `s1_common.predict_prob_array` + `02_ama_flood_inventory.py --tta`: Hann-blended overlapping tiles (no seams) and optional 4-flip test-time augmentation.
+- `02_ama_flood_inventory.py --slope slope.tif --max-slope 5`: drops flood pixels on steep slopes (radar shadow looks like water). Uses the slope layer exported by 00a; nodata is left untouched.
+- `tests/test_improvements.py`.
+
+### Changed
+- `--resume` now also continues the learning-rate schedule (`s1_common.OffsetSchedule`) instead of restarting it from the maximum LR; Adam moments still restart.
+- `02_ama_flood_inventory.py`: tiles are averaged with a Hann window instead of a plain mean (tile centres weigh more than edges); results change slightly. The `--thr` help now points to `01b`.
+- Built-in Keras `use_ema` was deliberately not used: it overwrites the training weights every N steps and, with ~15 steps per epoch, keeps pulling the model back and slows learning. `EMAWeights` only swaps the average in for validation/checkpoints.
+
 ### Added
 - Google Colab support: `notebooks/AMA_flood_susceptibility_colab.ipynb` runs stages 0a-4 in order with Drive persistence (skips finished stages, copies GEE exports from Drive and merges tiled exports), plus `requirements-colab.txt`. `tests/test_notebook.py` checks that every cell compiles and every pipeline call uses valid arguments.
 - `pipeline/gee_utils.py`: Earth Engine init with a clear authentication message, AOI from `AMA_AOI_ASSET`, and `wait_tasks()` to block until exports finish (`GEE_WAIT=1`).
